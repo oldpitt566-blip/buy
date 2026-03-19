@@ -1,33 +1,17 @@
-import { db, storage } from './firebase-config';
+import { db } from './firebase-config';
 import { collection, addDoc, query, where, orderBy, getDocs } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 /**
- * 上傳圖片到 Firebase Storage
+ * 新增購物記錄 (直接將 Base64 存入 Firestore)
  */
-const uploadImage = async (file, userId) => {
-  if (!file) return null;
-  const storageRef = ref(storage, `receipts/${userId}/${Date.now()}_${file.name}`);
-  const snapshot = await uploadBytes(storageRef, file);
-  return await getDownloadURL(snapshot.ref);
-};
-
-/**
- * 新增購物記錄
- */
-export const addPurchaseRecord = async (userId, data, imageFile) => {
+export const addPurchaseRecord = async (userId, data, base64Image) => {
   try {
-    let imageUrl = "";
-    if (imageFile) {
-      imageUrl = await uploadImage(imageFile, userId);
-    }
-
     const docRef = await addDoc(collection(db, "purchases"), {
       userId,
       itemName: data.itemName,
       price: Number(data.price),
       date: data.date,
-      imageUrl,
+      imageUrl: base64Image || "", // 這裡現在存的是 Base64 字串
       createdAt: new Date()
     });
     return docRef.id;
