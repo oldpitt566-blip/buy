@@ -1,5 +1,5 @@
 import './style.css';
-import { observeAuthState, loginWithGoogle, logout } from './auth';
+import { observeAuthState, loginWithGoogle, logout, handleLoginRedirect } from './auth';
 import { getUserPurchases } from './db';
 
 const userInfo = document.querySelector('#user-info');
@@ -10,21 +10,28 @@ let currentUser = null;
 
 // 監聽登入狀態
 observeAuthState(async (user) => {
+  if (!user) {
+    user = await handleLoginRedirect();
+  }
+
   currentUser = user;
   if (user) {
     // 已登入
     userInfo.innerHTML = `
-      <img src="${user.photoURL}" class="w-8 h-8 rounded-full border">
-      <button id="logout-btn" class="text-sm text-gray-500 underline">登出</button>
+      <div class="flex items-center gap-2">
+        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border">
+        <button id="logout-btn" class="text-sm text-gray-500 underline">登出</button>
+      </div>
     `;
-    document.querySelector('#logout-btn').addEventListener('click', logout);
+    document.querySelector('#logout-btn')?.addEventListener('click', logout);
     mainContent.classList.remove('hidden');
     loadHistory(user.uid);
   } else {
     // 未登入
     userInfo.innerHTML = `<button id="login-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow">Google 登入</button>`;
-    document.querySelector('#login-btn').addEventListener('click', loginWithGoogle);
+    document.querySelector('#login-btn')?.addEventListener('click', loginWithGoogle);
     mainContent.classList.add('hidden');
+    historyList.innerHTML = '<p class="text-gray-500 text-center py-10">請先登入以查看紀錄</p>';
   }
 });
 
@@ -62,6 +69,12 @@ async function loadHistory(userId) {
       </div>
     `).join('');
   } catch (error) {
-    historyList.innerHTML = `<p class="text-red-500 text-center py-10">載入失敗：${error.message}</p>`;
+    console.error("Load History Error:", error);
+    historyList.innerHTML = `
+      <div class="p-4 bg-red-50 text-red-600 rounded-lg text-sm">
+        載入失敗：${error.message}<br>
+        <small class="block mt-2 font-mono">如果是索引錯誤，請查看開發者工具 (F12) 中的連結</small>
+      </div>
+    `;
   }
 }
