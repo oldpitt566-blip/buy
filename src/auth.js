@@ -1,16 +1,31 @@
 import { auth, provider } from './firebase-config';
-import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { signInWithRedirect, signOut, onAuthStateChanged, getRedirectResult } from "firebase/auth";
 
 /**
- * 執行 Google 登入
+ * 執行 Google 登入 (改用 Redirect 增加手機穩定度)
  */
 export const loginWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
+    await signInWithRedirect(auth, provider);
   } catch (error) {
     console.error("Login Error:", error);
+    alert("登入啟動失敗：" + error.message);
     throw error;
+  }
+};
+
+/**
+ * 處理跳轉回來的結果
+ */
+export const handleLoginRedirect = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      return result.user;
+    }
+  } catch (error) {
+    console.error("Redirect Error:", error);
+    alert("登入跳轉出錯：" + error.message);
   }
 };
 

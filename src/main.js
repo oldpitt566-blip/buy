@@ -1,8 +1,7 @@
 import './style.css';
-import { observeAuthState, loginWithGoogle, logout } from './auth';
+import { observeAuthState, loginWithGoogle, logout, handleLoginRedirect } from './auth';
 import { addPurchaseRecord } from './db';
 
-const loginBtn = document.querySelector('#login-btn');
 const userInfo = document.querySelector('#user-info');
 const mainContent = document.querySelector('#main-content');
 const purchaseForm = document.querySelector('#purchase-form');
@@ -38,31 +37,45 @@ async function compressImage(file, maxWidth = 800) {
         canvas.height = img.height * scale;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        // 壓縮為 jpeg，品質 0.7，檔案大小極小
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
     };
   });
 }
 
-// 監聽登入狀態
-observeAuthState((user) => {
+// 監聽登入狀態並處理 Redirect 結果
+observeAuthState(async (user) => {
+  // 先處理可能剛跳轉回來的登入結果
+  if (!user) {
+    user = await handleLoginRedirect();
+  }
+
   currentUser = user;
   if (user) {
+    // 已登入
     userInfo.innerHTML = `
-      <img src="${user.photoURL}" class="w-8 h-8 rounded-full border">
-      <button id="logout-btn" class="text-sm text-gray-500 underline">登出</button>
+      <div class="flex items-center gap-2">
+        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border">
+        <button id="logout-btn" class="text-sm text-gray-500 underline">登出</button>
+      </div>
     `;
     document.querySelector('#logout-btn')?.addEventListener('click', logout);
     mainContent.classList.remove('hidden');
   } else {
+    // 未登入
     userInfo.innerHTML = `<button id="login-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow">Google 登入</button>`;
-    document.querySelector('#login-btn')?.addEventListener('click', loginWithGoogle);
+    document.querySelector('#login-btn')?.addEventListener('click', async () => {
+        try {
+            await loginWithGoogle();
+        } catch (e) {
+            alert("點擊登入發生錯誤：" + e.message);
+        }
+    });
     mainContent.classList.add('hidden');
   }
 });
 
-// 圖片預覽處理
+// 圖片預覽處理 (與之前相同)
 cameraInput?.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) {
@@ -77,7 +90,7 @@ cameraInput?.addEventListener('change', (e) => {
   }
 });
 
-// 移除圖片
+// 移除圖片 (與之前相同)
 removeImageBtn?.addEventListener('click', () => {
   selectedFile = null;
   cameraInput.value = '';
@@ -85,7 +98,7 @@ removeImageBtn?.addEventListener('click', () => {
   cameraLabel.classList.remove('hidden');
 });
 
-// 表單提交
+// 表單提交 (與之前相同)
 purchaseForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser) return alert('請先登入');
@@ -97,14 +110,12 @@ purchaseForm?.addEventListener('submit', async (e) => {
     submitBtn.disabled = true;
     submitBtn.innerText = '儲存中...';
 
-    // 取得資料
     const data = {
       itemName: document.querySelector('#item-name').value,
       price: document.querySelector('#price').value,
       date: document.querySelector('#date').value,
     };
 
-    // 核心改動：將圖片轉換為 Base64 字串後再存入 Firestore
     let base64Image = "";
     if (selectedFile) {
         base64Image = await compressImage(selectedFile);
