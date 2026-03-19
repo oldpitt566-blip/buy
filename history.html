@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>購物記錄器 - 歷史紀錄</title>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="app" class="max-w-md mx-auto p-4 pb-20">
+    <!-- 導覽列 -->
+    <header class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-blue-600">BuyLog</h1>
+      <div id="user-info" class="flex items-center gap-2">
+        <!-- 登入資訊由 JS 動態注入 -->
+      </div>
+    </header>
+
+    <main id="main-content" class="hidden">
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">歷史紀錄</h2>
+      
+      <!-- 記錄清單 -->
+      <div id="history-list" class="space-y-4">
+        <p class="text-gray-500 text-center py-10">載入中...</p>
+      </div>
+    </main>
+
+    <!-- 底部導覽列 -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-3">
+        <a href="index.html" class="flex flex-col items-center text-gray-500 hover:text-blue-500">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <span class="text-xs">新增</span>
+        </a>
+        <a href="history.html" class="flex flex-col items-center text-blue-600">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <span class="text-xs">紀錄</span>
+        </a>
+    </nav>
+  </div>
+
+  <script type="module" src="/src/history.js"></script>
+</body>
+</html>
