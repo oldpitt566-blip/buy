@@ -1,13 +1,8 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
 
 export default defineConfig({
+  // 現在只有一個 index.html 進入點，不需要額外設定 rollupOptions
   build: {
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        mydinner: resolve(__dirname, 'mydinner/index.html'),
-      },
-    },
+    outDir: 'dist',
   },
 });
