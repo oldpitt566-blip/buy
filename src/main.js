@@ -24,12 +24,13 @@ import {
 
 // --- 1. Firebase 設定 (請確保此處資訊正確) ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAZQUdpEvJ26zn5rfIdQgcwCcQosg4PQok",
+  authDomain: "buyalot-2e838.firebaseapp.com",
+  projectId: "buyalot-2e838",
+  storageBucket: "buyalot-2e838.firebasestorage.app",
+  messagingSenderId: "113950833516",
+  appId: "1:113950833516:web:e63d356afc2f8f152f9149",
+  measurementId: "G-9PML3EZVPC"
 };
 
 const app = initializeApp(firebaseConfig);
