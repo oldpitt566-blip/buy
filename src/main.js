@@ -1,149 +1,249 @@
 import './style.css';
-import { observeAuthState, loginWithGoogle, logout, handleLoginRedirect } from './auth';
-import { addPurchaseRecord } from './db';
+import { initializeApp } from "firebase/app";
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signOut, 
+    onAuthStateChanged, 
+    setPersistence, 
+    browserLocalPersistence 
+} from "firebase/auth";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    query, 
+    where, 
+    orderBy, 
+    getDocs 
+} from "firebase/firestore";
 
-const userInfo = document.querySelector('#user-info');
-const mainContent = document.querySelector('#main-content');
-const purchaseForm = document.querySelector('#purchase-form');
-const cameraInput = document.querySelector('#camera-input');
-const imagePreview = document.querySelector('#image-preview');
-const imagePreviewContainer = document.querySelector('#image-preview-container');
-const cameraLabel = document.querySelector('#camera-label');
-const removeImageBtn = document.querySelector('#remove-image');
-const dateInput = document.querySelector('#date');
+// --- 1. Firebase 設定 ---
+// TODO: 請將此處替換為您的真實 Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyAZQUdpEvJ26zn5rfIdQgcwCcQosg4PQok",
+  authDomain: "buyalot-2e838.firebaseapp.com",
+  projectId: "buyalot-2e838",
+  storageBucket: "buyalot-2e838.firebasestorage.app",
+  messagingSenderId: "113950833516",
+  appId: "1:113950833516:web:e63d356afc2f8f152f9149",
+  measurementId: "G-9PML3EZVPC"
+};
 
-// 建立一個除錯顯示區域（僅供開發排錯用）
-const debugEl = document.createElement('div');
-debugEl.className = 'fixed top-0 left-0 right-0 bg-black text-white text-[10px] p-1 z-[9999] opacity-70 pointer-events-none';
-debugEl.id = 'debug-log';
-document.body.appendChild(debugEl);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-function log(msg) {
-    console.log(msg);
-    debugEl.innerText = `Log: ${msg} | ${debugEl.innerText}`.substring(0, 200);
-}
-
+// --- 2. 狀態變數 ---
 let currentUser = null;
-let selectedFile = null;
+let currentView = 'add'; // 'add' 或 'history'
+let selectedBase64 = "";
 
-if (dateInput) dateInput.valueAsDate = new Date();
+// --- 3. DOM 元素 ---
+const el = {
+    userSection: document.querySelector('#user-section'),
+    viewLogin: document.querySelector('#view-login'),
+    viewAdd: document.querySelector('#view-add'),
+    viewHistory: document.querySelector('#view-history'),
+    historyContainer: document.querySelector('#history-container'),
+    bottomNav: document.querySelector('#bottom-nav'),
+    navTabs: document.querySelectorAll('.nav-tab'),
+    btnLogin: document.querySelector('#btn-login'),
+    addForm: document.querySelector('#add-form'),
+    inputCamera: document.querySelector('#input-camera'),
+    cameraBox: document.querySelector('#camera-box'),
+    previewImg: document.querySelector('#preview-img'),
+    cameraPlaceholder: document.querySelector('#camera-placeholder'),
+    btnRemoveImg: document.querySelector('#btn-remove-img'),
+    inputDate: document.querySelector('#input-date')
+};
 
-/**
- * 更新 UI 狀態
- */
-function updateUI(user) {
-  if (user) {
-    log("UI: 使用者已登入 - " + user.email);
-    currentUser = user;
-    userInfo.innerHTML = `
-      <div class="flex items-center gap-2">
-        <img src="${user.photoURL}" class="w-8 h-8 rounded-full border">
-        <button id="logout-btn" class="text-xs text-gray-500 underline">登出</button>
-      </div>
-    `;
-    document.querySelector('#logout-btn')?.addEventListener('click', () => {
-        log("執行登出...");
-        logout();
+// --- 4. 核心功能：圖片處理 ---
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                const scale = Math.min(MAX_WIDTH / img.width, 1);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+        };
     });
-    mainContent.classList.remove('hidden');
-  } else {
-    log("UI: 未登入狀態");
-    currentUser = null;
-    userInfo.innerHTML = `<button id="login-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow">Google 登入</button>`;
-    document.querySelector('#login-btn')?.addEventListener('click', () => {
-        log("點擊登入按鈕...");
-        loginWithGoogle().catch(err => {
-            log("登入啟動失敗: " + err.code);
-            alert("登入失敗：" + err.message);
-        });
-    });
-    mainContent.classList.add('hidden');
-  }
 }
 
-// 核心初始化
-async function initApp() {
-    log("App 開始初始化...");
-    userInfo.innerHTML = '<span class="text-xs text-gray-400">驗證中...</span>';
+// --- 5. 核心功能：視圖切換 ---
+function switchView(viewName) {
+    currentView = viewName;
     
-    // 1. 處理跳轉結果
-    try {
-        log("檢查 Redirect 結果...");
-        const result = await handleLoginRedirect();
-        if (result) {
-            log("Redirect 成功取得使用者: " + result.email);
-        } else {
-            log("無 Redirect 資訊");
-        }
-    } catch (e) {
-        log("Redirect 錯誤: " + e.code);
-        alert("跳轉登入失敗：" + e.message);
+    // 隱藏所有視圖
+    el.viewLogin.classList.add('hidden');
+    el.viewAdd.classList.add('hidden');
+    el.viewHistory.classList.add('hidden');
+
+    if (!currentUser) {
+        el.viewLogin.classList.remove('hidden');
+        el.bottomNav.classList.add('hidden');
+        return;
     }
 
-    // 2. 監聽狀態
-    observeAuthState((user) => {
-        log("Auth 狀態變更: " + (user ? "有人" : "無人"));
-        updateUI(user);
+    el.bottomNav.classList.remove('hidden');
+    
+    if (viewName === 'add') {
+        el.viewAdd.classList.remove('hidden');
+    } else {
+        el.viewHistory.classList.remove('hidden');
+        loadHistory();
+    }
+
+    // 更新導航欄顏色
+    el.navTabs.forEach(tab => {
+        const isActive = tab.dataset.view === viewName;
+        tab.classList.toggle('text-blue-600', isActive);
+        tab.classList.toggle('text-gray-400', !isActive);
     });
 }
 
-// 啟動
-initApp();
+// --- 6. 核心功能：資料操作 ---
+async function loadHistory() {
+    if (!currentUser) return;
+    el.historyContainer.innerHTML = '<p class="text-center text-gray-400 py-10">載入中...</p>';
+    
+    try {
+        const q = query(
+            collection(db, "purchases"),
+            where("userId", "==", currentUser.uid),
+            orderBy("date", "desc")
+        );
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            el.historyContainer.innerHTML = '<p class="text-center text-gray-400 py-10">尚無紀錄</p>';
+            return;
+        }
 
-// --- 圖片與表單邏輯 (略，保持原本功能) ---
-cameraInput?.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    selectedFile = file;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      imagePreview.src = ev.target.result;
-      imagePreviewContainer.classList.remove('hidden');
-      cameraLabel.classList.add('hidden');
-    };
-    reader.readAsDataURL(file);
-  }
-});
-removeImageBtn?.addEventListener('click', () => {
-  selectedFile = null;
-  cameraInput.value = '';
-  imagePreviewContainer.classList.add('hidden');
-  cameraLabel.classList.remove('hidden');
-});
-purchaseForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!currentUser) return alert('請先登入');
-  const submitBtn = document.querySelector('#submit-btn');
-  const originalBtnText = submitBtn.innerText;
-  try {
-    submitBtn.disabled = true;
-    submitBtn.innerText = '儲存中...';
-    const data = {
-      itemName: document.querySelector('#item-name').value,
-      price: document.querySelector('#price').value,
-      date: document.querySelector('#date').value,
-    };
-    const canvas = document.createElement('canvas');
-    let base64Image = "";
-    if (selectedFile) {
-        const img = new Image();
-        img.src = URL.createObjectURL(selectedFile);
-        await new Promise(r => img.onload = r);
-        const scale = Math.min(800 / img.width, 1);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        base64Image = canvas.toDataURL('image/jpeg', 0.7);
+        let html = '';
+        snap.forEach(doc => {
+            const d = doc.data();
+            html += `
+                <div class="bg-white p-3 rounded-xl shadow-sm flex gap-3 items-center border border-gray-50">
+                    <div class="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`}
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-gray-800 text-sm">${d.itemName}</h3>
+                        <p class="text-[10px] text-gray-400">${d.date}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-blue-600 font-extrabold text-sm">$${d.price}</p>
+                    </div>
+                </div>
+            `;
+        });
+        el.historyContainer.innerHTML = html;
+    } catch (err) {
+        el.historyContainer.innerHTML = `<p class="text-center text-red-400 py-10 text-xs">載入出錯: ${err.message}</p>`;
     }
-    await addPurchaseRecord(currentUser.uid, data, base64Image);
-    alert('記錄成功！');
-    purchaseForm.reset();
-    dateInput.valueAsDate = new Date();
-    removeImageBtn.click();
-  } catch (error) {
-    alert('儲存失敗：' + error.message);
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerText = originalBtnText;
-  }
+}
+
+// --- 7. 事件監聽 ---
+
+// 登入按鈕
+el.btnLogin.onclick = async () => {
+    try {
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithPopup(auth, provider);
+    } catch (err) {
+        alert("登入失敗: " + err.message);
+    }
+};
+
+// 底部選單切換
+el.navTabs.forEach(tab => {
+    tab.onclick = () => switchView(tab.dataset.view);
 });
+
+// 相機點擊
+el.cameraBox.onclick = () => el.inputCamera.click();
+
+// 圖片選擇後預覽
+el.inputCamera.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        selectedBase64 = await compressImage(file);
+        el.previewImg.src = selectedBase64;
+        el.previewImg.classList.remove('hidden');
+        el.cameraPlaceholder.classList.add('hidden');
+        el.btnRemoveImg.classList.remove('hidden');
+    }
+};
+
+// 移除圖片
+el.btnRemoveImg.onclick = (e) => {
+    e.stopPropagation();
+    selectedBase64 = "";
+    el.inputCamera.value = "";
+    el.previewImg.classList.add('hidden');
+    el.cameraPlaceholder.classList.remove('hidden');
+    el.btnRemoveImg.classList.add('hidden');
+};
+
+// 儲存表單
+el.addForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const btnSave = document.querySelector('#btn-save');
+    const originalText = btnSave.innerText;
+
+    try {
+        btnSave.disabled = true;
+        btnSave.innerText = "儲存中...";
+
+        await addDoc(collection(db, "purchases"), {
+            userId: currentUser.uid,
+            itemName: document.querySelector('#input-name').value,
+            price: Number(document.querySelector('#input-price').value),
+            date: document.querySelector('#input-date').value,
+            imageUrl: selectedBase64,
+            createdAt: new Date()
+        });
+
+        alert("儲存成功！");
+        el.addForm.reset();
+        el.inputDate.valueAsDate = new Date();
+        el.btnRemoveImg.click();
+    } catch (err) {
+        alert("儲存失敗: " + err.message);
+    } finally {
+        btnSave.disabled = false;
+        btnSave.innerText = originalText;
+    }
+};
+
+// --- 8. 初始化啟動 ---
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    if (user) {
+        el.userSection.innerHTML = `
+            <img src="${user.photoURL}" class="w-8 h-8 rounded-full border shadow-sm">
+            <button id="btn-logout" class="text-[10px] text-gray-400 underline">登出</button>
+        `;
+        document.querySelector('#btn-logout').onclick = () => signOut(auth);
+        switchView('add');
+    } else {
+        el.userSection.innerHTML = '';
+        switchView('login');
+    }
+});
+
+// 設定今日日期
+el.inputDate.valueAsDate = new Date();
