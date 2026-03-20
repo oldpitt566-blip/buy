@@ -1,7 +1,17 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // 現在只有一個 index.html 進入點，不需要額外設定 rollupOptions
+  
+  build: {
+    outDir: 'dist',
+  },
+});
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  // 修正：使用小寫 plugins，並給它一個空陣列
+  plugins: [], 
+  
   build: {
     outDir: 'dist',
   },
