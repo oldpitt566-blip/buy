@@ -18,15 +18,11 @@ export const loginWithGoogle = async () => {
  * 處理跳轉回來的結果
  */
 export const handleLoginRedirect = async () => {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result) {
-      return result.user;
-    }
-  } catch (error) {
-    console.error("Redirect Error:", error);
-    alert("登入跳轉出錯：" + error.message);
+  const result = await getRedirectResult(auth);
+  if (result) {
+    return result.user;
   }
+  return null;
 };
 
 /**
