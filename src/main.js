@@ -23,8 +23,8 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 let activeApp = 'buy';
 let activeTab = 'add';
-let displayMode = { buy: 'list', dinner: 'grid' }; // 預設顯示模式
-let selectedBase64 = "";
+let displayMode = { buy: 'list', dinner: 'grid' };
+let selectedFile = null; // 改存 File 物件，不存 Base64
 let records = { buy: [], dinner: [] };
 
 // --- 3. DOM 元素 ---
@@ -43,7 +43,7 @@ const el = {
     modalEdit: document.querySelector('#modal-edit')
 };
 
-// --- 4. 核心邏輯 ---
+// --- 4. 視圖切換 ---
 function updateUI() {
     el.viewLogin.classList.add('hidden');
     el.containerBuy.classList.add('hidden');
@@ -69,8 +69,6 @@ function updateUI() {
         document.querySelector('#view-dinner-add').classList.toggle('hidden', activeTab !== 'add');
         document.querySelector('#view-dinner-history').classList.toggle('hidden', activeTab !== 'history');
     }
-
-    // 更新 Tab 狀態顏色
     updateTabStyles();
     if (activeTab === 'history') loadData();
 }
@@ -88,23 +86,37 @@ function updateTabStyles() {
         btn.classList.toggle(activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600', isActive);
         btn.classList.toggle('text-gray-300', !isActive);
     });
-    // 更新顯示模式按鈕樣式
     document.querySelectorAll('.btn-display-mode').forEach(btn => {
         const isCurrent = btn.dataset.mode === displayMode[btn.dataset.app];
         const activeColor = btn.dataset.app === 'buy' ? 'text-blue-600' : 'text-amber-600';
         const activeBg = btn.dataset.app === 'buy' ? 'bg-blue-50' : 'bg-amber-50';
-        btn.classList.toggle(activeColor, isCurrent);
-        btn.classList.toggle(activeBg, isCurrent);
-        btn.classList.toggle('text-gray-400', !isCurrent);
-        btn.classList.toggle('bg-transparent', !isCurrent);
+        btn.classList.toggle(activeColor, isCurrent); btn.classList.toggle(activeBg, isCurrent);
+        btn.classList.toggle('text-gray-400', !isCurrent); btn.classList.toggle('bg-transparent', !isCurrent);
     });
 }
 
-// --- 5. 資料讀取與渲染 ---
+// --- 5. 圖片處理 (儲存時才跑) ---
+async function compressImage(file) {
+    return new Promise(r => {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(800 / img.width, 1);
+            canvas.width = img.width * scale; canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            r(canvas.toDataURL('image/jpeg', 0.7));
+            URL.revokeObjectURL(img.src); // 釋放記憶體
+        };
+    });
+}
+
+// --- 6. 資料讀取 ---
 async function loadData() {
     const col = activeApp === 'buy' ? 'purchases' : 'dinners';
     const container = document.querySelector(activeApp === 'buy' ? '#history-container-buy' : '#history-container-dinner');
-    container.innerHTML = '<p class="text-center text-gray-400 py-20">讀取中...</p>';
+    container.innerHTML = '<p class="text-center text-gray-400 py-20 font-bold italic">讀取中...</p>';
     try {
         const q = query(collection(db, col), where("userId", "==", currentUser.uid), orderBy("date", "desc"), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
@@ -119,7 +131,7 @@ function renderHistory(container) {
     const filtered = records[activeApp].filter(r => r.itemName.toLowerCase().includes(keyword) || (r.remarks && r.remarks.toLowerCase().includes(keyword)));
     const mode = displayMode[activeApp];
 
-    if (filtered.length === 0) { container.innerHTML = '<p class="text-center text-gray-400 py-20">沒有資料</p>'; return; }
+    if (filtered.length === 0) { container.innerHTML = '<p class="text-center text-gray-400 py-20 font-bold">目前沒有紀錄</p>'; return; }
 
     if (mode === 'list') {
         container.className = "space-y-4";
@@ -133,13 +145,12 @@ function renderHistory(container) {
                     <p class="text-xs text-gray-400 font-bold">${d.date} ${d.remarks ? `| ${d.remarks}` : ''}</p>
                 </div>
                 <div class="text-right flex flex-col items-end gap-2">
-                    ${d.price ? `<p class="text-blue-600 font-black text-xl tracking-tighter">$${d.price}</p>` : ''}
+                    ${d.price ? `<p class="${activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600'} font-black text-xl tracking-tighter">$${d.price}</p>` : ''}
                     <button class="btn-edit-trigger text-xs font-bold bg-gray-50 text-gray-400 px-3 py-1.5 rounded-lg" data-id="${d.id}" data-name="${d.itemName}" data-price="${d.price || ''}" data-remarks="${d.remarks || ''}">修改</button>
                 </div>
             </div>
         `).join('');
     } else {
-        // Grid 模式：每排兩張
         container.className = "grid grid-cols-2 gap-4";
         container.innerHTML = filtered.map(d => `
             <div class="bg-white rounded-[1.5rem] shadow-sm overflow-hidden border border-gray-50 relative group">
@@ -157,7 +168,6 @@ function renderHistory(container) {
             </div>
         `).join('');
     }
-
     container.querySelectorAll('.img-trigger').forEach(img => img.onclick = () => { el.fullImg.src = img.dataset.url; el.modalImage.classList.remove('hidden'); });
     container.querySelectorAll('.btn-edit-trigger').forEach(btn => btn.onclick = () => {
         document.querySelector('#edit-id').value = btn.dataset.id; document.querySelector('#edit-type').value = activeApp;
@@ -168,23 +178,27 @@ function renderHistory(container) {
     });
 }
 
-// --- 6. 事件綁定 ---
+// --- 7. 事件綁定 ---
 document.querySelector('#btn-login').onclick = () => signInWithPopup(auth, provider);
 el.appTabs.forEach(btn => btn.onclick = () => { activeApp = btn.dataset.app; activeTab = 'add'; updateUI(); });
 el.navTabs.forEach(btn => btn.onclick = () => { activeTab = btn.dataset.view; updateUI(); });
+document.querySelectorAll('.btn-display-mode').forEach(btn => { btn.onclick = () => { displayMode[btn.dataset.app] = btn.dataset.mode; updateUI(); }; });
 
-// 顯示模式切換綁定
-document.querySelectorAll('.btn-display-mode').forEach(btn => {
-    btn.onclick = () => { displayMode[btn.dataset.app] = btn.dataset.mode; updateUI(); };
-});
-
-// 拍照與儲存邏輯 (壓縮代碼以節省空間)
+// 拍照處理：改用 URL.createObjectURL 以求手機端極速預覽
 const setupCamera = (id) => {
     document.querySelector(`#camera-box-${id}`).onclick = () => document.querySelector(`#input-camera-${id}`).click();
-    document.querySelector(`#input-camera-${id}`).onchange = async e => {
-        const f = e.target.files[0]; if (f) { selectedBase64 = await compressImage(f); const p = document.querySelector(`#preview-img-${id}`); p.src = selectedBase64; p.classList.remove('hidden'); document.querySelector(`#camera-placeholder-${id}`).classList.add('hidden'); document.querySelector(`#btn-remove-img-${id}`).classList.remove('hidden'); }
+    document.querySelector(`#input-camera-${id}`).onchange = e => {
+        const f = e.target.files[0];
+        if (f) {
+            selectedFile = f; // 先存下原始檔案
+            const p = document.querySelector(`#preview-img-${id}`);
+            p.src = URL.createObjectURL(f); // 這裡超快，手機不會卡住
+            p.classList.remove('hidden');
+            document.querySelector(`#camera-placeholder-${id}`).classList.add('hidden');
+            document.querySelector(`#btn-remove-img-${id}`).classList.remove('hidden');
+        }
     };
-    document.querySelector(`#btn-remove-img-${id}`).onclick = e => { e.stopPropagation(); selectedBase64 = ""; document.querySelector(`#input-camera-${id}`).value = ""; document.querySelector(`#preview-img-${id}`).classList.add('hidden'); document.querySelector(`#camera-placeholder-${id}`).classList.remove('hidden'); e.target.classList.add('hidden'); };
+    document.querySelector(`#btn-remove-img-${id}`).onclick = e => { e.stopPropagation(); selectedFile = null; document.querySelector(`#input-camera-${id}`).value = ""; document.querySelector(`#preview-img-${id}`).classList.add('hidden'); document.querySelector(`#camera-placeholder-${id}`).classList.remove('hidden'); e.target.classList.add('hidden'); };
 };
 setupCamera('buy'); setupCamera('dinner');
 
@@ -194,8 +208,16 @@ document.querySelector('#search-keyword-dinner').oninput = () => renderHistory(d
 const handleSubmit = async (id, col, dataFn) => {
     const btn = document.querySelector(`#add-form-${id} button[type="submit"]`);
     try {
-        btn.disabled = true; btn.innerText = "儲存中...";
-        await addDoc(collection(db, col), { userId: currentUser.uid, ...dataFn(), imageUrl: selectedBase64, createdAt: new Date() });
+        btn.disabled = true; btn.innerText = "正在壓縮圖片...";
+        
+        // 儲存時才壓縮圖片，減少手機負荷
+        let base64Image = "";
+        if (selectedFile) {
+            base64Image = await compressImage(selectedFile);
+        }
+
+        btn.innerText = "儲存中...";
+        await addDoc(collection(db, col), { userId: currentUser.uid, ...dataFn(), imageUrl: base64Image, createdAt: new Date() });
         alert("儲存成功！"); document.querySelector(`#add-form-${id}`).reset(); document.querySelector(`#input-date-${id}`).valueAsDate = new Date(); document.querySelector(`#btn-remove-img-${id}`).click();
     } catch (err) { alert(err.message); } finally { btn.disabled = false; btn.innerText = "儲存紀錄"; }
 };
