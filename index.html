@@ -5,149 +5,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LifeLog - 生活紀錄中心</title>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+<body class="bg-gray-100 min-h-screen font-sans text-gray-900">
     <div id="app" class="max-w-md mx-auto relative min-h-screen">
-        <!-- 頂部導覽欄 (保持不變) -->
-        <header class="bg-white p-4 shadow-sm sticky top-0 z-50">
-            <div class="flex justify-between items-center mb-4">
-                <h1 id="app-title" class="text-2xl font-black text-blue-600 tracking-tight">BuyLog</h1>
+        <!-- 頂部導覽欄 -->
+        <header class="bg-white p-5 shadow-sm sticky top-0 z-50">
+            <div class="flex justify-between items-center mb-5">
+                <h1 id="app-title" class="text-3xl font-black tracking-tighter">BuyLog 💰</h1>
                 <div id="user-section" class="flex items-center gap-3">
-                    <span id="loading-spinner" class="text-sm text-gray-400">載入中...</span>
+                    <span id="loading-spinner" class="text-sm text-gray-400 italic">連線中...</span>
                 </div>
             </div>
-            <div id="app-switcher" class="hidden flex bg-gray-100 p-1 rounded-2xl">
-                <button class="app-tab flex-1 py-2 rounded-xl font-black text-sm transition-all bg-white shadow-sm text-blue-600" data-app="buy">購物 💰</button>
-                <button class="app-tab flex-1 py-2 rounded-xl font-black text-sm transition-all text-gray-400" data-app="dinner">晚餐 🥘</button>
+            <!-- App 切換器 -->
+            <div id="app-switcher" class="hidden flex bg-gray-100 p-1.5 rounded-2xl">
+                <button class="app-tab flex-1 py-3 rounded-xl font-black text-base transition-all" data-app="buy">購物 💰</button>
+                <button class="app-tab flex-1 py-3 rounded-xl font-black text-base transition-all" data-app="dinner">晚餐 🥘</button>
             </div>
         </header>
 
         <!-- 主內容視圖容器 -->
-        <main id="main-view" class="p-4 pb-32">
-            <!-- 登入視圖 (略) -->
-            <section id="view-login" class="hidden py-20 text-center">
-                <div class="bg-white p-10 rounded-[2.5rem] shadow-xl inline-block w-full border border-gray-100">
-                    <div class="text-5xl mb-6">📝</div>
-                    <h2 class="text-2xl font-bold mb-4">歡迎使用 LifeLog</h2>
-                    <button id="btn-login" class="w-full bg-blue-500 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-blue-200 shadow-lg active:scale-95">使用 Google 帳號登入</button>
+        <main id="main-view" class="p-5 pb-36">
+            <!-- 登入視圖 -->
+            <section id="view-login" class="hidden py-24 text-center">
+                <div class="bg-white p-10 rounded-[3rem] shadow-xl inline-block w-full border border-gray-100">
+                    <div class="text-6xl mb-8">🚀</div>
+                    <h2 class="text-3xl font-black mb-5">LifeLog</h2>
+                    <p class="text-lg text-gray-500 mb-10 leading-relaxed">一站式輕鬆紀錄<br>您的購物支出與美味晚餐。</p>
+                    <button id="btn-login" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl shadow-blue-200 shadow-2xl active:scale-95 transition-transform">
+                        使用 Google 登入
+                    </button>
                 </div>
             </section>
 
             <!-- 1. 購物紀錄內容 (BuyLog) -->
-            <div id="container-buy" class="hidden space-y-6">
-                <!-- 新增購買 (略) -->
-                <section id="view-buy-add" class="hidden space-y-4">
-                    <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-50">
-                        <h2 class="text-xl font-bold mb-5 text-gray-800">新增購物記錄</h2>
-                        <form id="add-form-buy" class="space-y-5">
-                            <div class="space-y-2">
-                                <div id="camera-box-buy" class="w-full h-52 bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer overflow-hidden relative">
+            <div id="container-buy" class="hidden space-y-8">
+                <section id="view-buy-add" class="hidden space-y-6">
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-md border border-gray-50">
+                        <h2 class="text-2xl font-black mb-6 text-gray-800">新增購物記錄</h2>
+                        <form id="add-form-buy" class="space-y-6">
+                            <div class="space-y-3">
+                                <div id="camera-box-buy" class="w-full h-60 bg-blue-50 border-2 border-dashed border-blue-200 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer overflow-hidden relative">
                                     <img id="preview-img-buy" src="" class="hidden w-full h-full object-contain">
                                     <div id="camera-placeholder-buy" class="text-center">
-                                        <svg class="w-12 h-12 text-blue-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                        <p class="text-base text-blue-400 font-bold">點擊拍照 / 上傳</p>
+                                        <svg class="w-16 h-16 text-blue-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        <p class="text-lg text-blue-400 font-black">拍照或上傳圖片</p>
                                     </div>
                                     <input type="file" id="input-camera-buy" accept="image/*" capture="environment" class="hidden">
                                 </div>
-                                <button type="button" id="btn-remove-img-buy" class="hidden text-sm text-red-500 font-medium underline py-1">移除照片</button>
+                                <button type="button" id="btn-remove-img-buy" class="hidden text-base text-red-500 font-bold underline py-1">移除照片</button>
                             </div>
                             <div>
-                                <label class="block text-base font-bold text-gray-700">商品名稱</label>
-                                <input type="text" id="input-name-buy" required placeholder="買了什麼？" class="mt-1 block w-full px-5 py-3 bg-gray-50 border-0 rounded-xl text-base focus:ring-2 focus:ring-blue-500">
+                                <label class="block text-lg font-black text-gray-700 mb-2 pl-1">商品名稱</label>
+                                <input type="text" id="input-name-buy" required placeholder="買了什麼好東西？" class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-4 focus:ring-blue-500/20">
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-base font-bold text-gray-700">價格</label><input type="number" id="input-price-buy" required placeholder="0" class="mt-1 block w-full px-5 py-3 bg-gray-50 border-0 rounded-xl text-base focus:ring-2 focus:ring-blue-500"></div>
-                                <div><label class="block text-base font-bold text-gray-700">日期</label><input type="date" id="input-date-buy" required class="mt-1 block w-full px-5 py-3 bg-gray-50 border-0 rounded-xl text-base focus:ring-2 focus:ring-blue-500"></div>
+                            <div class="grid grid-cols-2 gap-5">
+                                <div><label class="block text-lg font-black text-gray-700 mb-2 pl-1">價格</label><input type="number" id="input-price-buy" required placeholder="0" class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-4 focus:ring-blue-500/20"></div>
+                                <div><label class="block text-lg font-black text-gray-700 mb-2 pl-1">日期</label><input type="date" id="input-date-buy" required class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-4 focus:ring-blue-500/20"></div>
                             </div>
-                            <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 mt-4">儲存紀錄</button>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-transform mt-6">儲存購物紀錄</button>
                         </form>
                     </div>
                 </section>
-                <!-- 購買歷史 (加入切換器) -->
-                <section id="view-buy-history" class="hidden space-y-4">
-                    <div class="bg-white p-4 rounded-3xl shadow-sm space-y-3 border border-gray-50">
-                        <input type="text" id="search-keyword-buy" placeholder="搜尋商品名稱..." class="w-full px-5 py-3 bg-gray-50 border-0 rounded-2xl text-base focus:ring-2 focus:ring-blue-500">
-                        <!-- 顯示模式切換 -->
-                        <div class="flex justify-end gap-2 px-1">
-                            <button class="btn-display-mode p-2 rounded-lg bg-gray-100 text-blue-600" data-mode="list" data-app="buy">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                            </button>
-                            <button class="btn-display-mode p-2 rounded-lg text-gray-400" data-mode="grid" data-app="buy">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                            </button>
+                <section id="view-buy-history" class="hidden space-y-5">
+                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-5">
+                        <input type="text" id="search-keyword-buy" placeholder="搜尋商品名稱..." class="w-full px-6 py-4 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-blue-500">
+                        <div class="flex justify-end gap-3">
+                            <button class="btn-display-mode p-3 rounded-xl" data-mode="list" data-app="buy"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                            <button class="btn-display-mode p-3 rounded-xl" data-mode="grid" data-app="buy"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg></button>
                         </div>
                     </div>
-                    <div id="history-container-buy" class="space-y-4"></div>
+                    <div id="history-container-buy"></div>
                 </section>
             </div>
 
             <!-- 2. 晚餐紀錄內容 (MyDinner) -->
-            <div id="container-dinner" class="hidden space-y-6">
-                <!-- 新增晚餐 (略) -->
-                <section id="view-dinner-add" class="hidden space-y-4">
-                    <div class="bg-white p-6 rounded-[2rem] shadow-md border border-amber-50">
-                        <h2 class="text-xl font-bold mb-5 text-gray-800">今天晚餐吃什麼？</h2>
-                        <form id="add-form-dinner" class="space-y-5">
-                            <div class="space-y-2">
-                                <div id="camera-box-dinner" class="w-full h-64 bg-amber-50 border-2 border-dashed border-amber-200 rounded-3xl flex flex-col items-center justify-center cursor-pointer overflow-hidden relative">
-                                    <img id="preview-img-dinner" src="" class="hidden w-full h-full object-cover">
-                                    <div id="camera-placeholder-dinner" class="text-center">
-                                        <svg class="w-12 h-12 text-amber-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                        <p class="text-base text-amber-400 font-bold">記錄美味晚餐</p>
-                                    </div>
-                                    <input type="file" id="input-camera-dinner" accept="image/*" capture="environment" class="hidden">
+            <div id="container-dinner" class="hidden space-y-8">
+                <section id="view-dinner-add" class="hidden space-y-6">
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-md border border-amber-50">
+                        <h2 class="text-2xl font-black mb-6 text-gray-800">今天晚餐吃什麼？</h2>
+                        <form id="add-form-dinner" class="space-y-6">
+                            <div id="camera-box-dinner" class="w-full h-72 bg-amber-50 border-2 border-dashed border-amber-200 rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer overflow-hidden relative">
+                                <img id="preview-img-dinner" src="" class="hidden w-full h-full object-cover">
+                                <div id="camera-placeholder-dinner" class="text-center">
+                                    <svg class="w-16 h-16 text-amber-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                                    <p class="text-lg text-amber-400 font-black">捕捉美味時刻</p>
                                 </div>
-                                <button type="button" id="btn-remove-img-dinner" class="hidden text-sm text-red-500 font-bold underline py-1">重新拍照</button>
+                                <input type="file" id="input-camera-dinner" accept="image/*" capture="environment" class="hidden">
                             </div>
-                            <div><label class="block text-base font-bold text-gray-700">晚餐名稱</label><input type="text" id="input-name-dinner" required placeholder="晚餐名稱" class="mt-1 block w-full px-5 py-3 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-base font-bold text-gray-700">日期</label><input type="date" id="input-date-dinner" required class="mt-1 block w-full px-5 py-3 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-base font-bold text-gray-700">備註 / 心情</label><textarea id="input-remarks-dinner" rows="2" placeholder="寫點什麼..." class="mt-1 block w-full px-5 py-3 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-amber-500"></textarea></div>
-                            <button type="submit" class="w-full bg-amber-600 text-white py-4 rounded-2xl font-bold text-xl shadow-lg active:scale-95 mt-4">儲存紀錄</button>
+                            <button type="button" id="btn-remove-img-dinner" class="hidden text-base text-red-500 font-bold underline py-1">重新拍攝</button>
+                            <div>
+                                <label class="block text-lg font-black text-gray-700 mb-2 pl-1">晚餐名稱</label>
+                                <input type="text" id="input-name-dinner" required placeholder="例如：日式豬排蓋飯" class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-4 focus:ring-amber-500/20">
+                            </div>
+                            <div>
+                                <label class="block text-lg font-black text-gray-700 mb-2 pl-1">日期</label>
+                                <input type="date" id="input-date-dinner" required class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-4 focus:ring-amber-500/20">
+                            </div>
+                            <div>
+                                <label class="block text-lg font-black text-gray-700 mb-2 pl-1">備註 / 心情</label>
+                                <textarea id="input-remarks-dinner" rows="3" placeholder="寫點這餐的故事..." class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-4 focus:ring-amber-500/20"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-amber-600 text-white py-5 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-transform mt-6">儲存美味紀錄</button>
                         </form>
                     </div>
                 </section>
-                <!-- 晚餐牆 (加入切換器) -->
-                <section id="view-dinner-history" class="hidden space-y-4">
-                    <div class="bg-white p-4 rounded-3xl shadow-sm space-y-3 border border-amber-50">
-                        <input type="text" id="search-keyword-dinner" placeholder="搜尋晚餐或備註..." class="w-full px-5 py-3 bg-gray-50 border-0 rounded-2xl text-base focus:ring-2 focus:ring-amber-500">
-                        <div class="flex justify-end gap-2 px-1">
-                            <button class="btn-display-mode p-2 rounded-lg text-gray-400" data-mode="list" data-app="dinner">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                            </button>
-                            <button class="btn-display-mode p-2 rounded-lg bg-amber-50 text-amber-600" data-mode="grid" data-app="dinner">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                            </button>
+                <section id="view-dinner-history" class="hidden space-y-5">
+                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm space-y-5">
+                        <input type="text" id="search-keyword-dinner" placeholder="搜尋晚餐名稱或備註..." class="w-full px-6 py-4 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-amber-500">
+                        <div class="flex justify-end gap-3">
+                            <button class="btn-display-mode p-3 rounded-xl" data-mode="list" data-app="dinner"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                            <button class="btn-display-mode p-3 rounded-xl" data-mode="grid" data-app="dinner"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg></button>
                         </div>
                     </div>
-                    <div id="history-container-dinner" class="space-y-6"></div>
+                    <div id="history-container-dinner"></div>
                 </section>
             </div>
         </main>
 
-        <!-- 底部 Tab / Modals (略) -->
-        <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-3 pb-8 shadow-2xl z-40 max-w-md mx-auto">
-            <button class="nav-tab flex flex-col items-center gap-1 px-8 py-2 text-blue-600" data-view="add"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg><span class="text-xs font-black">記錄</span></button>
-            <button class="nav-tab flex flex-col items-center gap-1 px-8 py-2 text-gray-300" data-view="history"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span class="text-xs font-black">歷史</span></button>
+        <!-- 底部 Tab 導覽 -->
+        <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-4 pb-10 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] z-40 max-w-md mx-auto">
+            <button class="nav-tab flex flex-col items-center gap-1.5 px-8 py-2 transition-all active:scale-90" data-view="add">
+                <svg class="w-9 h-9" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                <span class="text-sm font-black tracking-wider">記錄</span>
+            </button>
+            <button class="nav-tab flex flex-col items-center gap-1.5 px-8 py-2 transition-all active:scale-90" data-view="history">
+                <svg class="w-9 h-9" fill="currentColor" viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                <span class="text-sm font-black tracking-wider">歷史</span>
+            </button>
         </nav>
 
+        <!-- Modals -->
         <div id="modal-image" class="hidden fixed inset-0 z-[100] bg-black bg-opacity-95 flex items-center justify-center p-4">
-            <button id="btn-close-img-modal" class="absolute top-6 right-6 text-white bg-white/20 p-2 rounded-full"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            <img id="full-img" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg">
+            <button id="btn-close-img-modal" class="absolute top-8 right-8 text-white bg-white/20 p-3 rounded-full backdrop-blur-md"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <img id="full-img" src="" class="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-3xl">
         </div>
 
         <div id="modal-edit" class="hidden fixed inset-0 z-[90] bg-black bg-opacity-60 flex items-end justify-center p-0">
-            <div class="bg-white w-full rounded-t-[2.5rem] p-8 shadow-2xl animate-slide-up">
-                <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-black text-gray-800">修改紀錄</h3><button id="btn-close-edit-modal" class="text-gray-400 p-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-                <form id="edit-form" class="space-y-6">
+            <div class="bg-white w-full rounded-t-[3.5rem] p-10 shadow-2xl animate-slide-up">
+                <div class="flex justify-between items-center mb-10">
+                    <h3 class="text-3xl font-black text-gray-800">修改紀錄</h3>
+                    <button id="btn-close-edit-modal" class="text-gray-300 p-2"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                </div>
+                <form id="edit-form" class="space-y-8">
                     <input type="hidden" id="edit-id"><input type="hidden" id="edit-type">
-                    <div><label class="block text-base font-bold text-gray-500 mb-2">名稱 / 描述</label><input type="text" id="edit-name" required class="block w-full px-5 py-4 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-blue-500"></div>
-                    <div id="edit-field-price"><label class="block text-base font-bold text-gray-500 mb-2">價格</label><input type="number" id="edit-price" class="block w-full px-5 py-4 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-blue-500"></div>
-                    <div id="edit-field-remarks" class="hidden"><label class="block text-base font-bold text-gray-500 mb-2">備註</label><textarea id="edit-remarks" rows="2" class="block w-full px-5 py-4 bg-gray-50 border-0 rounded-2xl text-lg focus:ring-2 focus:ring-amber-500"></textarea></div>
-                    <div class="flex gap-4 pt-6"><button type="button" id="btn-delete-record" class="flex-1 bg-red-50 text-red-600 py-4 rounded-2xl font-bold">刪除</button><button type="submit" id="btn-edit-save" class="flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg">儲存修改</button></div>
+                    <div>
+                        <label class="block text-lg font-black text-gray-400 mb-3 pl-1 uppercase">名稱描述</label>
+                        <input type="text" id="edit-name" required class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-xl focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div id="edit-field-price">
+                        <label class="block text-lg font-black text-gray-400 mb-3 pl-1 uppercase">價格</label>
+                        <input type="number" id="edit-price" class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-xl focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div id="edit-field-remarks" class="hidden">
+                        <label class="block text-lg font-black text-gray-400 mb-3 pl-1 uppercase">備註</label>
+                        <textarea id="edit-remarks" rows="3" class="block w-full px-6 py-5 bg-gray-50 border-0 rounded-2xl text-xl focus:ring-2 focus:ring-amber-500"></textarea>
+                    </div>
+                    <div class="flex gap-5 pt-8 pb-6">
+                        <button type="button" id="btn-delete-record" class="flex-1 bg-red-50 text-red-600 py-5 rounded-2xl font-black text-lg">刪除</button>
+                        <button type="submit" class="flex-[2] bg-blue-600 text-white py-5 rounded-2xl font-black text-xl shadow-xl">儲存修改</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
-    <style> @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } } .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1); } </style>
+    <style> 
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } } 
+        .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1); } 
+        input[type="date"] { min-height: 4rem; } 
+        textarea { resize: none; }
+    </style>
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>

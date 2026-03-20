@@ -24,7 +24,7 @@ let currentUser = null;
 let activeApp = 'buy';
 let activeTab = 'add';
 let displayMode = { buy: 'list', dinner: 'grid' };
-let selectedFile = null; // 改存 File 物件，不存 Base64
+let selectedFile = null;
 let records = { buy: [], dinner: [] };
 
 // --- 3. DOM 元素 ---
@@ -59,13 +59,13 @@ function updateUI() {
     if (activeApp === 'buy') {
         el.containerBuy.classList.remove('hidden');
         el.appTitle.innerText = "BuyLog 💰";
-        el.appTitle.className = "text-2xl font-black text-blue-600";
+        el.appTitle.className = "text-3xl font-black text-blue-600 tracking-tighter";
         document.querySelector('#view-buy-add').classList.toggle('hidden', activeTab !== 'add');
         document.querySelector('#view-buy-history').classList.toggle('hidden', activeTab !== 'history');
     } else {
         el.containerDinner.classList.remove('hidden');
         el.appTitle.innerText = "MyDinner 🥘";
-        el.appTitle.className = "text-2xl font-black text-amber-600";
+        el.appTitle.className = "text-3xl font-black text-amber-600 tracking-tighter";
         document.querySelector('#view-dinner-add').classList.toggle('hidden', activeTab !== 'add');
         document.querySelector('#view-dinner-history').classList.toggle('hidden', activeTab !== 'history');
     }
@@ -74,56 +74,60 @@ function updateUI() {
 }
 
 function updateTabStyles() {
+    const activeColor = activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600';
+    const activeBg = activeApp === 'buy' ? 'bg-blue-50' : 'bg-amber-50';
+
     el.appTabs.forEach(btn => {
         const isActive = btn.dataset.app === activeApp;
         btn.classList.toggle('bg-white', isActive);
-        btn.classList.toggle('shadow-sm', isActive);
-        btn.classList.toggle(activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600', isActive);
+        btn.classList.toggle('shadow-md', isActive);
+        btn.classList.toggle(activeColor, isActive);
         btn.classList.toggle('text-gray-400', !isActive);
     });
     el.navTabs.forEach(btn => {
         const isActive = btn.dataset.view === activeTab;
-        btn.classList.toggle(activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600', isActive);
+        btn.classList.toggle(activeColor, isActive);
         btn.classList.toggle('text-gray-300', !isActive);
+        btn.classList.toggle('scale-110', isActive);
     });
     document.querySelectorAll('.btn-display-mode').forEach(btn => {
         const isCurrent = btn.dataset.mode === displayMode[btn.dataset.app];
-        const activeColor = btn.dataset.app === 'buy' ? 'text-blue-600' : 'text-amber-600';
-        const activeBg = btn.dataset.app === 'buy' ? 'bg-blue-50' : 'bg-amber-50';
-        btn.classList.toggle(activeColor, isCurrent); btn.classList.toggle(activeBg, isCurrent);
-        btn.classList.toggle('text-gray-400', !isCurrent); btn.classList.toggle('bg-transparent', !isCurrent);
+        btn.classList.toggle(activeColor, isCurrent);
+        btn.classList.toggle(activeBg, isCurrent);
+        btn.classList.toggle('text-gray-300', !isCurrent);
     });
 }
 
-// --- 5. 圖片處理 (儲存時才跑) ---
+// --- 5. 圖片壓縮 ---
 async function compressImage(file) {
     return new Promise(r => {
         const img = new Image();
         img.src = URL.createObjectURL(file);
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const scale = Math.min(800 / img.width, 1);
+            const scale = Math.min(1000 / img.width, 1);
             canvas.width = img.width * scale; canvas.height = img.height * scale;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            r(canvas.toDataURL('image/jpeg', 0.7));
-            URL.revokeObjectURL(img.src); // 釋放記憶體
+            r(canvas.toDataURL('image/jpeg', 0.8));
+            URL.revokeObjectURL(img.src);
         };
     });
 }
 
-// --- 6. 資料讀取 ---
+// --- 6. 資料讀取與渲染 ---
 async function loadData() {
     const col = activeApp === 'buy' ? 'purchases' : 'dinners';
-    const container = document.querySelector(activeApp === 'buy' ? '#history-container-buy' : '#history-container-dinner');
-    container.innerHTML = '<p class="text-center text-gray-400 py-20 font-bold italic">讀取中...</p>';
+    const containerId = activeApp === 'buy' ? '#history-container-buy' : '#history-container-dinner';
+    const container = document.querySelector(containerId);
+    container.innerHTML = '<p class="text-center text-gray-400 py-32 text-xl font-bold italic animate-pulse">讀取紀錄中...</p>';
     try {
         const q = query(collection(db, col), where("userId", "==", currentUser.uid), orderBy("date", "desc"), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
         records[activeApp] = [];
         snap.forEach(d => records[activeApp].push({ id: d.id, ...d.data() }));
         renderHistory(container);
-    } catch (err) { container.innerHTML = `<p class="text-center text-red-400 py-20">${err.message}</p>`; }
+    } catch (err) { container.innerHTML = `<p class="text-center text-red-400 py-20 text-lg">${err.message}</p>`; }
 }
 
 function renderHistory(container) {
@@ -131,43 +135,44 @@ function renderHistory(container) {
     const filtered = records[activeApp].filter(r => r.itemName.toLowerCase().includes(keyword) || (r.remarks && r.remarks.toLowerCase().includes(keyword)));
     const mode = displayMode[activeApp];
 
-    if (filtered.length === 0) { container.innerHTML = '<p class="text-center text-gray-400 py-20 font-bold">目前沒有紀錄</p>'; return; }
+    if (filtered.length === 0) { container.innerHTML = '<p class="text-center text-gray-400 py-32 text-xl font-black">查無紀錄 🔍</p>'; return; }
 
     if (mode === 'list') {
-        container.className = "space-y-4";
+        container.className = "space-y-5";
         container.innerHTML = filtered.map(d => `
-            <div class="bg-white p-4 rounded-[1.5rem] shadow-sm flex gap-4 items-center border border-gray-50">
-                <div class="w-20 h-20 bg-gray-100 rounded-2xl overflow-hidden flex-shrink-0 cursor-zoom-in">
-                    ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-full object-cover img-trigger" data-url="${d.imageUrl}">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`}
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm flex gap-5 items-center border border-gray-50 active:bg-gray-50 transition-colors">
+                <div class="w-24 h-24 bg-gray-100 rounded-2xl overflow-hidden flex-shrink-0 cursor-zoom-in border border-gray-100 shadow-inner">
+                    ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-full object-cover img-trigger" data-url="${d.imageUrl}">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`}
                 </div>
                 <div class="flex-grow">
-                    <h3 class="font-bold text-gray-800 text-lg leading-tight">${d.itemName}</h3>
-                    <p class="text-xs text-gray-400 font-bold">${d.date} ${d.remarks ? `| ${d.remarks}` : ''}</p>
+                    <h3 class="font-black text-gray-800 text-xl leading-tight mb-1">${d.itemName}</h3>
+                    <p class="text-sm text-gray-400 font-bold tracking-wider">${d.date} ${d.remarks ? `| ${d.remarks}` : ''}</p>
                 </div>
-                <div class="text-right flex flex-col items-end gap-2">
-                    ${d.price ? `<p class="${activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600'} font-black text-xl tracking-tighter">$${d.price}</p>` : ''}
-                    <button class="btn-edit-trigger text-xs font-bold bg-gray-50 text-gray-400 px-3 py-1.5 rounded-lg" data-id="${d.id}" data-name="${d.itemName}" data-price="${d.price || ''}" data-remarks="${d.remarks || ''}">修改</button>
+                <div class="text-right flex flex-col items-end gap-3">
+                    ${d.price ? `<p class="${activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600'} font-black text-2xl tracking-tighter">$${d.price}</p>` : ''}
+                    <button class="btn-edit-trigger text-sm font-black bg-gray-100 text-gray-500 px-4 py-2 rounded-xl active:scale-95" data-id="${d.id}" data-name="${d.itemName}" data-price="${d.price || ''}" data-remarks="${d.remarks || ''}">修改</button>
                 </div>
             </div>
         `).join('');
     } else {
-        container.className = "grid grid-cols-2 gap-4";
+        container.className = "grid grid-cols-2 gap-5";
         container.innerHTML = filtered.map(d => `
-            <div class="bg-white rounded-[1.5rem] shadow-sm overflow-hidden border border-gray-50 relative group">
+            <div class="bg-white rounded-[2.5rem] shadow-sm overflow-hidden border border-gray-50 relative active:scale-95 transition-transform">
                 <div class="aspect-square bg-gray-100 overflow-hidden cursor-zoom-in">
-                    ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-full object-cover img-trigger" data-url="${d.imageUrl}">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`}
+                    ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-full object-cover img-trigger" data-url="${d.imageUrl}">` : `<div class="w-full h-full flex items-center justify-center text-gray-200"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`}
                 </div>
-                <div class="p-3">
-                    <h3 class="font-bold text-gray-800 text-sm truncate">${d.itemName}</h3>
-                    <div class="flex justify-between items-center mt-1">
-                        <p class="text-[10px] text-gray-400 font-bold">${d.date}</p>
-                        ${d.price ? `<p class="text-blue-600 font-black text-sm">$${d.price}</p>` : ''}
+                <div class="p-4">
+                    <h3 class="font-black text-gray-800 text-lg truncate mb-1">${d.itemName}</h3>
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-xs text-gray-400 font-bold">${d.date.substring(5)}</p>
+                        ${d.price ? `<p class="${activeApp === 'buy' ? 'text-blue-600' : 'text-amber-600'} font-black text-lg">$${d.price}</p>` : ''}
                     </div>
-                    <button class="btn-edit-trigger w-full mt-2 text-[10px] font-bold bg-gray-50 text-gray-400 py-1 rounded-md" data-id="${d.id}" data-name="${d.itemName}" data-price="${d.price || ''}" data-remarks="${d.remarks || ''}">修改</button>
+                    <button class="btn-edit-trigger w-full text-sm font-black bg-gray-50 text-gray-400 py-2.5 rounded-xl" data-id="${d.id}" data-name="${d.itemName}" data-price="${d.price || ''}" data-remarks="${d.remarks || ''}">修改</button>
                 </div>
             </div>
         `).join('');
     }
+    // 事件重新綁定 (略，與之前邏輯相同)
     container.querySelectorAll('.img-trigger').forEach(img => img.onclick = () => { el.fullImg.src = img.dataset.url; el.modalImage.classList.remove('hidden'); });
     container.querySelectorAll('.btn-edit-trigger').forEach(btn => btn.onclick = () => {
         document.querySelector('#edit-id').value = btn.dataset.id; document.querySelector('#edit-type').value = activeApp;
@@ -178,25 +183,16 @@ function renderHistory(container) {
     });
 }
 
-// --- 7. 事件綁定 ---
+// --- 7. 其他事件處理 (保持不變) ---
 document.querySelector('#btn-login').onclick = () => signInWithPopup(auth, provider);
 el.appTabs.forEach(btn => btn.onclick = () => { activeApp = btn.dataset.app; activeTab = 'add'; updateUI(); });
 el.navTabs.forEach(btn => btn.onclick = () => { activeTab = btn.dataset.view; updateUI(); });
 document.querySelectorAll('.btn-display-mode').forEach(btn => { btn.onclick = () => { displayMode[btn.dataset.app] = btn.dataset.mode; updateUI(); }; });
 
-// 拍照處理：改用 URL.createObjectURL 以求手機端極速預覽
 const setupCamera = (id) => {
     document.querySelector(`#camera-box-${id}`).onclick = () => document.querySelector(`#input-camera-${id}`).click();
     document.querySelector(`#input-camera-${id}`).onchange = e => {
-        const f = e.target.files[0];
-        if (f) {
-            selectedFile = f; // 先存下原始檔案
-            const p = document.querySelector(`#preview-img-${id}`);
-            p.src = URL.createObjectURL(f); // 這裡超快，手機不會卡住
-            p.classList.remove('hidden');
-            document.querySelector(`#camera-placeholder-${id}`).classList.add('hidden');
-            document.querySelector(`#btn-remove-img-${id}`).classList.remove('hidden');
-        }
+        const f = e.target.files[0]; if (f) { document.querySelector(`#preview-img-${id}`).src = URL.createObjectURL(f); document.querySelector(`#preview-img-${id}`).classList.remove('hidden'); document.querySelector(`#camera-placeholder-${id}`).classList.add('hidden'); document.querySelector(`#btn-remove-img-${id}`).classList.remove('hidden'); selectedFile = f; }
     };
     document.querySelector(`#btn-remove-img-${id}`).onclick = e => { e.stopPropagation(); selectedFile = null; document.querySelector(`#input-camera-${id}`).value = ""; document.querySelector(`#preview-img-${id}`).classList.add('hidden'); document.querySelector(`#camera-placeholder-${id}`).classList.remove('hidden'); e.target.classList.add('hidden'); };
 };
@@ -208,17 +204,11 @@ document.querySelector('#search-keyword-dinner').oninput = () => renderHistory(d
 const handleSubmit = async (id, col, dataFn) => {
     const btn = document.querySelector(`#add-form-${id} button[type="submit"]`);
     try {
-        btn.disabled = true; btn.innerText = "正在壓縮圖片...";
-        
-        // 儲存時才壓縮圖片，減少手機負荷
-        let base64Image = "";
-        if (selectedFile) {
-            base64Image = await compressImage(selectedFile);
-        }
-
-        btn.innerText = "儲存中...";
-        await addDoc(collection(db, col), { userId: currentUser.uid, ...dataFn(), imageUrl: base64Image, createdAt: new Date() });
-        alert("儲存成功！"); document.querySelector(`#add-form-${id}`).reset(); document.querySelector(`#input-date-${id}`).valueAsDate = new Date(); document.querySelector(`#btn-remove-img-${id}`).click();
+        btn.disabled = true; btn.innerText = "⚡ 正在壓縮...";
+        let b64 = selectedFile ? await compressImage(selectedFile) : "";
+        btn.innerText = "☁️ 儲存中...";
+        await addDoc(collection(db, col), { userId: currentUser.uid, ...dataFn(), imageUrl: b64, createdAt: new Date() });
+        alert("儲存成功！✅"); document.querySelector(`#add-form-${id}`).reset(); document.querySelector(`#input-date-${id}`).valueAsDate = new Date(); document.querySelector(`#btn-remove-img-${id}`).click();
     } catch (err) { alert(err.message); } finally { btn.disabled = false; btn.innerText = "儲存紀錄"; }
 };
 document.querySelector('#add-form-buy').onsubmit = e => { e.preventDefault(); handleSubmit('buy', 'purchases', () => ({ itemName: document.querySelector('#input-name-buy').value, price: Number(document.querySelector('#input-price-buy').value), date: document.querySelector('#input-date-buy').value })); };
@@ -239,9 +229,8 @@ document.querySelector('#btn-delete-record').onclick = async () => {
 
 onAuthStateChanged(auth, u => {
     currentUser = u;
-    if (u) el.userSection.innerHTML = `<img src="${u.photoURL}" class="w-10 h-10 rounded-full border shadow-sm"><button id="btn-logout" class="text-xs text-gray-400 font-bold underline">登出</button>`;
+    if (u) el.userSection.innerHTML = `<img src="${u.photoURL}" class="w-12 h-12 rounded-full border-2 border-white shadow-md">`;
     else el.userSection.innerHTML = '';
-    document.querySelector('#btn-logout')?.addEventListener('click', () => signOut(auth));
     updateUI();
 });
 document.querySelector('#input-date-buy').valueAsDate = new Date();
